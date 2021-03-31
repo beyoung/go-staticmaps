@@ -28,6 +28,8 @@ type Marker struct {
 	Label      string
 	LabelColor color.Color
 	im         image.Image
+	offsetX float64
+	offsetY float64
 }
 
 // NewMarker creates a new Marker
@@ -42,14 +44,15 @@ func NewMarker(pos s2.LatLng, col color.Color, size float64) *Marker {
 	} else {
 		m.LabelColor = color.RGBA{0xff, 0xff, 0xff, 0xff}
 	}
-
 	return m
 }
 
-func NewImageMarker(pos s2.LatLng, im image.Image) *Marker {
+func NewImageMarker(pos s2.LatLng, im image.Image, offsetX, offsetY float64) *Marker {
 	m := new(Marker)
 	m.Position = pos
 	m.im = im
+	m.offsetX = offsetX
+	m.offsetY = offsetY
 	return m
 }
 
@@ -160,7 +163,7 @@ func (m *Marker) Draw(gc *gg.Context, trans *Transformer) {
 			gc.DrawStringAnchored(m.Label, x, y-m.Size, 0.5, 0.5)
 		}
 	} else {
-		gc.DrawImage(m.im, int(x), int(y))
+		gc.DrawImage(m.im, int(x-m.offsetX), int(y-m.offsetY))
 	}
 
 }

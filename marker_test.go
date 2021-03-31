@@ -54,15 +54,19 @@ func TestMaker(t *testing.T) {
 	ctx.AddObject(NewPath(s2LineString,
 		color.RGBA{17, 174, 250, 0xff}, 8.0),
 	)
+	offsetX, offsetY := 16.0, 16.0
 	ctx.AddObject(
-		NewImageMarker(s2.LatLngFromDegrees(startPoint[1], startPoint[0]),
-			fstart),
+		NewImageMarker(
+			s2.LatLngFromDegrees(startPoint[1], startPoint[0]),
+			fstart,
+			offsetX, offsetY),
 	)
 	ctx.AddObject(
-		NewImageMarker(s2.LatLngFromDegrees(endpoint[1], endpoint[0]),
-			fend),
+		NewImageMarker(
+			s2.LatLngFromDegrees(endpoint[1], endpoint[0]),
+			fend,
+			offsetX, offsetY),
 	)
-
 
 	img, err := ctx.Render()
 	if err != nil {
