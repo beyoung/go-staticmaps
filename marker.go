@@ -7,6 +7,7 @@ package sm
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"log"
 	"math"
@@ -26,6 +27,7 @@ type Marker struct {
 	Size       float64
 	Label      string
 	LabelColor color.Color
+	im         image.Image
 }
 
 // NewMarker creates a new Marker
@@ -41,6 +43,13 @@ func NewMarker(pos s2.LatLng, col color.Color, size float64) *Marker {
 		m.LabelColor = color.RGBA{0xff, 0xff, 0xff, 0xff}
 	}
 
+	return m
+}
+
+func NewImageMarker(pos s2.LatLng, im image.Image) *Marker {
+	m := new(Marker)
+	m.Position = pos
+	m.im = im
 	return m
 }
 
@@ -130,23 +139,28 @@ func (m *Marker) Draw(gc *gg.Context, trans *Transformer) {
 		log.Printf("Marker coordinates not displayable: %f/%f", m.Position.Lat.Degrees(), m.Position.Lng.Degrees())
 		return
 	}
-
-	gc.ClearPath()
-	gc.SetLineJoin(gg.LineJoinRound)
-	gc.SetLineWidth(1.0)
-
-	radius := 0.5 * m.Size
 	x, y := trans.LatLngToXY(m.Position)
-	gc.DrawArc(x, y-m.Size, radius, (90.0+60.0)*math.Pi/180.0, (360.0+90.0-60.0)*math.Pi/180.0)
-	gc.LineTo(x, y)
-	gc.ClosePath()
-	gc.SetColor(m.Color)
-	gc.FillPreserve()
-	gc.SetRGB(0, 0, 0)
-	gc.Stroke()
+	if m.im == nil {
+		gc.ClearPath()
+		gc.SetLineJoin(gg.LineJoinRound)
+		gc.SetLineWidth(1.0)
 
-	if m.Label != "" {
-		gc.SetColor(m.LabelColor)
-		gc.DrawStringAnchored(m.Label, x, y-m.Size, 0.5, 0.5)
+		radius := 0.5 * m.Size
+
+		gc.DrawArc(x, y-m.Size, radius, (90.0+60.0)*math.Pi/180.0, (360.0+90.0-60.0)*math.Pi/180.0)
+		gc.LineTo(x, y)
+		gc.ClosePath()
+		gc.SetColor(m.Color)
+		gc.FillPreserve()
+		gc.SetRGB(0, 0, 0)
+		gc.Stroke()
+
+		if m.Label != "" {
+			gc.SetColor(m.LabelColor)
+			gc.DrawStringAnchored(m.Label, x, y-m.Size, 0.5, 0.5)
+		}
+	} else {
+		gc.DrawImage(m.im, int(x), int(y))
 	}
+
 }
