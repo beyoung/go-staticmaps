@@ -1,6 +1,6 @@
 module github.com/beyoung/go-staticmaps
 
-go 1.12
+go 1.16
 
 require (
 	github.com/Wessie/appdirs v0.0.0-20141031215813-6573e894f8e2

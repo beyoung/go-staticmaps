@@ -624,7 +624,6 @@ func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tile
 		t.SetUserAgent(m.userAgent)
 	}
 
-	wp := workerpool.New(20)
 	var tasks []Task
 	var tileImages []TileImage
 	// get tasks
@@ -657,6 +656,13 @@ func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tile
 	}
 
 	mutex := sync.Mutex{}
+	var maxWorkers int
+	if len(tasks) > 20 {
+		maxWorkers = 20
+	} else {
+		maxWorkers = len(tasks)
+	}
+	wp := workerpool.New(maxWorkers)
 	for _, task := range tasks {
 		tt := task
 		wp.Submit(func() {
