@@ -668,14 +668,16 @@ func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tile
 		wp.Submit(func() {
 			data, err := t.Download(t.url(tt.zoom, tt.x, tt.y))
 			if err == nil {
-				img, _, _ := image.Decode(bytes.NewBuffer(data))
-				mutex.Lock()
-				tileImages = append(tileImages, TileImage{
-					image: img,
-					x:     tt.xx,
-					y:     tt.yy,
-				})
-				mutex.Unlock()
+				img, _, err := image.Decode(bytes.NewBuffer(data))
+				if err == nil {
+					mutex.Lock()
+					tileImages = append(tileImages, TileImage{
+						image: img,
+						x:     tt.xx,
+						y:     tt.yy,
+					})
+					mutex.Unlock()
+				}
 			}
 		})
 	}
