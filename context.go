@@ -7,17 +7,21 @@
 package sm
 
 import (
+	"bytes"
 	"errors"
 	"image"
 	"image/color"
 	"image/draw"
 	"log"
 	"math"
+	"sync"
 
 	"github.com/fogleman/gg"
 	"github.com/golang/geo/r2"
 	"github.com/golang/geo/s1"
 	"github.com/golang/geo/s2"
+
+	"github.com/gammazero/workerpool"
 )
 
 // Context holds all information about the map image that is to be rendered
@@ -44,6 +48,18 @@ type Context struct {
 	cache        TileCache
 
 	overrideAttribution *string
+}
+
+type TileImage struct {
+	image image.Image
+	x     int
+	y     int
+}
+
+type Task struct {
+	x, y   int
+	xx, yy int
+	zoom   int
 }
 
 // NewContext creates a new instance of Context
@@ -381,9 +397,9 @@ type Transformer struct {
 	tileSize           int     // tile size in pixels from this provider
 	pWidth, pHeight    int     // pixel size of returned set of tiles
 	pCenterX, pCenterY int     // pixel location of requested center in set of tiles
-	tCountX, tCountY   int     // download area in tile units
+	tCountX, tCountY   int     // Download area in tile units
 	tCenterX, tCenterY float64 // tile index to requested center
-	tOriginX, tOriginY int     // bottom left tile to download
+	tOriginX, tOriginY int     // bottom left tile to Download
 	pMinX, pMaxX       int
 	proj               s2.Projection
 }
@@ -494,7 +510,7 @@ func (m *Context) Render() (image.Image, error) {
 	img := image.NewRGBA(image.Rect(0, 0, trans.pWidth, trans.pHeight))
 	gc := gg.NewContextForRGBA(img)
 	if m.background != nil {
-		draw.Draw(img, img.Bounds(), &image.Uniform{m.background}, image.Point{}, draw.Src)
+		draw.Draw(img, img.Bounds(), &image.Uniform{C: m.background}, image.Point{}, draw.Src)
 	}
 
 	// fetch and draw tiles to img
@@ -517,7 +533,7 @@ func (m *Context) Render() (image.Image, error) {
 	// crop image
 	croppedImg := image.NewRGBA(image.Rect(0, 0, int(m.width), int(m.height)))
 	draw.Draw(croppedImg, image.Rect(0, 0, int(m.width), int(m.height)),
-		img, image.Point{trans.pCenterX - int(m.width)/2, trans.pCenterY - int(m.height)/2},
+		img, image.Point{X: trans.pCenterX - int(m.width)/2, Y: trans.pCenterY - int(m.height)/2},
 		draw.Src)
 
 	// draw attribution
@@ -608,7 +624,11 @@ func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tile
 		t.SetUserAgent(m.userAgent)
 	}
 
-	tiles := (1 << uint(zoom))
+	wp := workerpool.New(6)
+	var tasks []Task
+	var tileImages []TileImage
+	// get tasks
+	tiles := 1 << uint(zoom)
 	for xx := 0; xx < trans.tCountX; xx++ {
 		x := trans.tOriginX + xx
 		if x < 0 {
@@ -626,17 +646,37 @@ func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tile
 				log.Printf("Skipping out of bounds tile %d/%d", x, y)
 				continue
 			}
-
-			if tileImg, err := t.Fetch(zoom, x, y); err == nil {
-				gc.DrawImage(tileImg, xx*tileSize, yy*tileSize)
-			} else if err == errTileNotFound && provider.IgnoreNotFound {
-				log.Printf("Error downloading tile file: %s (Ignored)", err)
-				continue
-			} else {
-				log.Printf("Error downloading tile file: %s", err)
-				return err
-			}
+			tasks = append(tasks, Task{
+				x:    x,
+				y:    y,
+				xx:   xx,
+				yy:   yy,
+				zoom: zoom,
+			})
 		}
+	}
+
+	mutex := sync.Mutex{}
+	for _, task := range tasks {
+		tt := task
+		wp.Submit(func() {
+			data, err := t.Download(t.url(tt.zoom, tt.x, tt.y))
+			if err == nil {
+				img, _, _ := image.Decode(bytes.NewBuffer(data))
+				mutex.Lock()
+				tileImages = append(tileImages, TileImage{
+					image: img,
+					x:     tt.xx,
+					y:     tt.yy,
+				})
+				mutex.Unlock()
+			}
+		})
+	}
+	wp.StopWait()
+	log.Println("total tiles", len(tileImages))
+	for idx := range tileImages {
+		gc.DrawImage(tileImages[idx].image, tileImages[idx].x*tileSize, tileImages[idx].y*tileSize)
 	}
 
 	return nil

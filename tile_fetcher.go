@@ -64,7 +64,7 @@ func cacheFileName(cache TileCache, providerName string, zoom, x, y int) string 
 	)
 }
 
-// Fetch download (or retrieves from the cache) a tile image for the specified zoom level and tile coordinates
+// Fetch Download (or retrieves from the cache) a tile image for the specified zoom level and tile coordinates
 func (t *TileFetcher) Fetch(zoom, x, y int) (image.Image, error) {
 	if t.cache != nil {
 		fileName := cacheFileName(t.cache, t.tileProvider.Name, zoom, x, y)
@@ -75,7 +75,7 @@ func (t *TileFetcher) Fetch(zoom, x, y int) (image.Image, error) {
 	}
 
 	url := t.url(zoom, x, y)
-	data, err := t.download(url)
+	data, err := t.Download(url)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (t *TileFetcher) Fetch(zoom, x, y int) (image.Image, error) {
 	return img, nil
 }
 
-func (t *TileFetcher) download(url string) ([]byte, error) {
+func (t *TileFetcher) Download(url string) ([]byte, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", t.userAgent)
 
