@@ -548,24 +548,10 @@ func (m *Context) Render() (image.Image, error) {
 		img, image.Point{X: trans.pCenterX - int(m.width)/2, Y: trans.pCenterY - int(m.height)/2},
 		draw.Src)
 
-	// draw logo
+	gc = gg.NewContextForRGBA(croppedImg)
 	if m.logo.Logo != nil {
 		gc.DrawImageAnchored(m.logo.Logo, m.width, m.height, m.logo.X, m.logo.Y)
 	}
-
-	// draw attribution
-	attribution := m.Attribution()
-	if attribution == "" {
-		return croppedImg, nil
-	}
-	_, textHeight := gc.MeasureString(attribution)
-	boxHeight := textHeight + 4.0
-	gc = gg.NewContextForRGBA(croppedImg)
-	gc.SetRGBA(0.0, 0.0, 0.0, 0.5)
-	gc.DrawRectangle(0.0, float64(m.height)-boxHeight, float64(m.width), boxHeight)
-	gc.Fill()
-	gc.SetRGBA(1.0, 1.0, 1.0, 0.75)
-	gc.DrawString(attribution, 4.0, float64(m.height)-4.0)
 
 	return croppedImg, nil
 }
