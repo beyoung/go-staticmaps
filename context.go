@@ -46,6 +46,7 @@ type Context struct {
 	userAgent    string
 	tileProvider *TileProvider
 	cache        TileCache
+	logo         Logo
 
 	overrideAttribution *string
 }
@@ -54,6 +55,12 @@ type TileImage struct {
 	image image.Image
 	x     int
 	y     int
+}
+
+type Logo struct {
+	Logo image.Image
+	X    float64
+	Y    float64
 }
 
 type Task struct {
@@ -75,6 +82,11 @@ func NewContext() *Context {
 	t.tileProvider = NewTileProviderOpenStreetMaps()
 	t.cache = NewTileCacheFromUserCache(0777)
 	return t
+}
+
+// SetLogo set the Logo
+func (m *Context) SetLogo(logo Logo) {
+	m.logo = logo
 }
 
 // SetTileProvider sets the TileProvider to be used
@@ -549,6 +561,11 @@ func (m *Context) Render() (image.Image, error) {
 	gc.Fill()
 	gc.SetRGBA(1.0, 1.0, 1.0, 0.75)
 	gc.DrawString(attribution, 4.0, float64(m.height)-4.0)
+
+	// draw logo
+	if m.logo.Logo != nil {
+		gc.DrawImageAnchored(m.logo.Logo, m.width, m.height, m.logo.X, m.logo.Y)
+	}
 
 	return croppedImg, nil
 }
