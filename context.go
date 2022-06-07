@@ -311,7 +311,7 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 	dy := math.Abs(maxY - minY)
 
 	zoom := 1
-	for zoom < 30 {
+	for zoom < 21 {
 		tiles := float64(uint(1) << uint(zoom))
 		if dx*tiles > w || dy*tiles > h {
 			return zoom - 1
@@ -319,7 +319,7 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 		zoom = zoom + 1
 	}
 
-	return 15
+	return 18
 }
 
 // determineCenter computes a point that is visually centered in Mercator projection
