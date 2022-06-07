@@ -311,7 +311,7 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 	dy := math.Abs(maxY - minY)
 
 	zoom := 1
-	for zoom < 30 {
+	for zoom < 21 {
 		tiles := float64(uint(1) << uint(zoom))
 		if dx*tiles > w || dy*tiles > h {
 			return zoom - 1
@@ -319,7 +319,7 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 		zoom = zoom + 1
 	}
 
-	return 15
+	return 20
 }
 
 // determineCenter computes a point that is visually centered in Mercator projection
@@ -669,6 +669,7 @@ func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tile
 	for _, task := range tasks {
 		tt := task
 		wp.Submit(func() {
+			log.Println(t.url(tt.zoom, tt.x, tt.y))
 			data, err := t.Download(t.url(tt.zoom, tt.x, tt.y))
 			if err == nil {
 				img, _, err := image.Decode(bytes.NewBuffer(data))
